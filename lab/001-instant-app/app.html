@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>仮説ウォッチボード</title>
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --card: #ffffff;
+    --ink: #2b2a26;
+    --sub: #6b675e;
+    --line: #e3ded2;
+    --accent: #b4552d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 32px 20px 64px;
+  }
+  header { max-width: 860px; margin: 0 auto 28px; }
+  h1 { font-size: 1.5rem; letter-spacing: 0.02em; }
+  header p { color: var(--sub); margin-top: 6px; font-size: 0.9rem; }
+  main { max-width: 860px; margin: 0 auto; display: grid; gap: 16px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .card h2 { font-size: 1.05rem; }
+  .card h2 .hid { color: var(--accent); margin-right: 8px; font-weight: 700; }
+  dl { margin-top: 12px; display: grid; grid-template-columns: 7.5em 1fr; gap: 6px 12px; font-size: 0.9rem; }
+  dt { color: var(--sub); }
+  dd { line-height: 1.5; }
+  .status-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .status-btn {
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--sub);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .status-btn.active { color: #fff; border-color: transparent; }
+  .status-btn.active[data-status="監視中"] { background: #5b7a99; }
+  .status-btn.active[data-status="近い"]   { background: #c28a1e; }
+  .status-btn.active[data-status="成立"]   { background: #4a7d4f; }
+  .status-btn.active[data-status="棄却"]   { background: #8a8378; }
+  textarea {
+    margin-top: 14px;
+    width: 100%;
+    min-height: 60px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: 0.9rem;
+    background: #fdfcf9;
+    resize: vertical;
+  }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .saved-note { font-size: 0.75rem; color: var(--sub); margin-top: 6px; text-align: right; }
+</style>
+</head>
+<body>
+<header>
+  <h1>仮説ウォッチボード</h1>
+  <p>閾値トリガー型の仮説バックログ(H1〜H5)。状態とメモはこのブラウザに自動保存されます。</p>
+</header>
+<main id="board"></main>
+
+<script>
+const HYPOTHESES = [
+  {
+    id: "H1",
+    name: "個別即席アプリ",
+    condition: "「仕様→動くアプリ」が1回の対話・無視できる単価で高成功率に",
+    metric: "コード生成のトークン単価、ワンショット成功率",
+  },
+  {
+    id: "H2",
+    name: "瞬時マルチモーダル",
+    condition: "リアルタイム音声・映像理解のレイテンシ<会話速度、単価<体験価値",
+    metric: "リアルタイムAPIの価格・レイテンシ",
+  },
+  {
+    id: "H3",
+    name: "常時同伴エージェント",
+    condition: "リアルタイム音声対話が「1日中つけっぱなし」で許容できる単価に",
+    metric: "realtime audio API の単価/レイテンシ",
+  },
+  {
+    id: "H4",
+    name: "全文脈パーソナルAI",
+    condition: "個人の全履歴を毎回フルロードしても無視できるコストに",
+    metric: "100万token級コンテキストの単価、キャッシュ価格",
+  },
+  {
+    id: "H5",
+    name: "N=1プロダクト",
+    condition: "顧客一人のための専用ソフトが採算成立",
+    metric: "生成成功率 × 保守の自動化度",
+  },
+];
+const STATUSES = ["監視中", "近い", "成立", "棄却"];
+const STORE_KEY = "hypothesis-watch-board-v1";
+
+function loadState() {
+  try {
+    return JSON.parse(localStorage.getItem(STORE_KEY)) || {};
+  } catch (e) {
+    return {};
+  }
+}
+function saveState(state) {
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
+
+const state = loadState();
+const board = document.getElementById("board");
+
+HYPOTHESES.forEach((h) => {
+  const entry = state[h.id] || { status: "監視中", memo: "" };
+  state[h.id] = entry;
+
+  const card = document.createElement("section");
+  card.className = "card";
+
+  const head = document.createElement("div");
+  head.className = "card-head";
+
+  const title = document.createElement("h2");
+  const hid = document.createElement("span");
+  hid.className = "hid";
+  hid.textContent = h.id;
+  title.appendChild(hid);
+  title.appendChild(document.createTextNode(h.name));
+  head.appendChild(title);
+
+  const group = document.createElement("div");
+  group.className = "status-group";
+  const buttons = {};
+  STATUSES.forEach((s) => {
+    const btn = document.createElement("button");
+    btn.className = "status-btn";
+    btn.dataset.status = s;
+    btn.textContent = s;
+    btn.addEventListener("click", () => {
+      entry.status = s;
+      saveState(state);
+      STATUSES.forEach((x) => buttons[x].classList.toggle("active", x === s));
+    });
+    buttons[s] = btn;
+    group.appendChild(btn);
+  });
+  buttons[entry.status].classList.add("active");
+  head.appendChild(group);
+  card.appendChild(head);
+
+  const dl = document.createElement("dl");
+  const rows = [
+    ["成立条件", h.condition],
+    ["ウォッチ指標", h.metric],
+  ];
+  rows.forEach(([k, v]) => {
+    const dt = document.createElement("dt");
+    dt.textContent = k;
+    const dd = document.createElement("dd");
+    dd.textContent = v;
+    dl.appendChild(dt);
+    dl.appendChild(dd);
+  });
+  card.appendChild(dl);
+
+  const memo = document.createElement("textarea");
+  memo.placeholder = "メモ(観測した価格・ニュース・所感など)";
+  memo.value = entry.memo;
+  const note = document.createElement("div");
+  note.className = "saved-note";
+  note.textContent = "";
+  let timer = null;
+  memo.addEventListener("input", () => {
+    entry.memo = memo.value;
+    saveState(state);
+    note.textContent = "保存しました";
+    clearTimeout(timer);
+    timer = setTimeout(() => (note.textContent = ""), 1200);
+  });
+  card.appendChild(memo);
+  card.appendChild(note);
+
+  board.appendChild(card);
+});
+</script>
+</body>
+</html>
