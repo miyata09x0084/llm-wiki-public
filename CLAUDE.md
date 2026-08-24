@@ -96,6 +96,14 @@ sources: ["raw/example.md"]
 
 結果を報告し、承認された修正のみ適用。実施を log.md に記録する。
 
+### Publish(公開同期)
+
+このリポジトリは private。公開ミラー [llm-wiki-public](https://github.com/miyata09x0084/llm-wiki-public) へは `scripts/sync-public.sh` で同期する(手動・任意タイミング)。
+
+- 除外は `.publishignore` で管理 — `raw/` 全体(他者コンテンツの再配布リスク)+ 非公開ページ
+- 非公開にしたいページは ingest 時に `.publishignore` へ1行追加する。index.md / log.md の言及はスクリプトが自動除去する
+- 一度 push した内容の完全削除は困難(GitHub は PR refs を保持)。**公開可否は ingest 時点で判断する**
+
 ## index.md の規約
 
 - カテゴリ別(Topics / Entities / Concepts / Sources / Answers)に全ページを列挙
