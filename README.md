@@ -1,83 +1,83 @@
 # LLM Wiki
 
-[Karpathy の LLM Wiki パターン](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)に基づく個人ナレッジベース。
+A personal knowledge base built on [Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
 
-**LLM が Wiki を書き、人間はソースの供給と質問に専念する。**
-Obsidian が IDE、LLM がプログラマー、Wiki がコードベース。
+**The LLM writes the wiki; the human only supplies sources and asks questions.**
+Obsidian is the IDE, the LLM is the programmer, and the wiki is the codebase.
 
-## 使い方
+## Usage
 
-### 1. ソースを追加する
+### 1. Add sources
 
-記事・論文・メモ・書き起こしなどを `raw/` に置く(Markdown 推奨)。
+Drop articles, papers, notes, transcripts, etc. into `raw/` (Markdown preferred).
 
-- [Obsidian Web Clipper](https://obsidian.md/clipper) で Web 記事を Markdown 化して `raw/` に保存すると楽
-- 画像は `raw/assets/` に(Obsidian の添付保存先に設定済み)
+- [Obsidian Web Clipper](https://obsidian.md/clipper) makes it easy to save web articles as Markdown straight into `raw/`
+- Put images in `raw/assets/` (already configured as Obsidian's attachment folder)
 
-### 2. 取り込む
+### 2. Ingest
 
-Claude Code でこのディレクトリを開いて:
+Open this directory in Claude Code and run:
 
 ```
 /ingest
 ```
 
-または「raw/ に◯◯を置いたので取り込んで」。
-LLM が要約 → 関連ページ更新 → index / log 更新まで行う。
+Or just say "I put X in raw/, please ingest it."
+The LLM summarizes the source → updates related pages → updates the index and log.
 
-### 3. 質問する
+### 3. Ask questions
 
-そのまま聞くだけ:
+Just ask:
 
-- 「◯◯について、これまでの情報を整理して」
-- 「AとBを比較して」
+- "Summarize everything we have on X so far"
+- "Compare A and B"
 
-良い回答は `wiki/answers/` に保存され、知識が複利で蓄積される。
+Good answers are saved to `wiki/answers/`, so knowledge compounds over time.
 
-### 4. 定期メンテナンス
+### 4. Periodic maintenance
 
 ```
 /lint
 ```
 
-矛盾・孤立ページ・情報ギャップをチェックする。
+Checks for contradictions, orphan pages, and information gaps.
 
-## Obsidian で閲覧する
+## Browsing in Obsidian
 
-このフォルダ(`llm-wiki/`)を Vault として開く。
+Open this folder (`llm-wiki/`) as a vault.
 
-- **グラフビュー**で Wiki の全体像・ハブページ・孤立ページが見える
-- Settings → Hotkeys → "Download attachments for current file" にホットキーを割り当てると、クリップした記事の画像を一括ローカル保存できる
+- **Graph view** shows the overall shape of the wiki, hub pages, and orphan pages
+- Assign a hotkey to Settings → Hotkeys → "Download attachments for current file" to save all images from a clipped article locally in one go
 
-## 構造
+## Structure
 
-| パス | 役割 | 書くのは |
+| Path | Role | Written by |
 |---|---|---|
-| `raw/` | 不変のソース | 人間 |
-| `wiki/` | 生成ページ(index / log / sources / entities / concepts / topics / answers) | LLM |
-| `CLAUDE.md` | スキーマ(LLM の運用規約) | 共同(合意の上で更新) |
+| `raw/` | Immutable sources | Human |
+| `wiki/` | Generated pages (index / log / sources / entities / concepts / topics / answers) | LLM |
+| `CLAUDE.md` | Schema (operating rules for the LLM) | Both (updated by agreement) |
 
-## 例: 「家系ラーメン」の知識がどう育つか
+## Example: how knowledge about "Iekei ramen" grows
 
-1件の Web 調査(名古屋市の家系ラーメン店)が、役割の異なるページに分解されて蓄積される。
+A single web research note (Iekei ramen shops in Nagoya) is broken down into pages with different roles and accumulates over time.
 
 ```
-raw/Web調査+GoogleMaps確認 名古屋市の家系ラーメン.md   ← 人間が置くソース(不変)
+raw/Web research + Google Maps check: Iekei ramen in Nagoya.md   ← source placed by the human (immutable)
  │
  ├─ /ingest ────────────────────────────────────────
- │   ├─ wiki/sources/  調査の要約(ソース1件 = 1ページ)
- │   ├─ wiki/concepts/ 家系ラーメン — 普遍の知識(系譜の分類: 直系・壱系・資本系…)
- │   └─ wiki/topics/   名古屋の家系ラーメン — 進化するページ(巡礼リスト、実食のたび更新)
+ │   ├─ wiki/sources/  summary of the research (one source = one page)
+ │   ├─ wiki/concepts/ Iekei ramen — timeless knowledge (lineage taxonomy: direct-line, Ichi-kei, chain-style, ...)
+ │   └─ wiki/topics/   Iekei ramen in Nagoya — evolving page (pilgrimage list, updated after every visit)
  │
- └─ 質問「スープの栄養価は?」──────────────────────
-     └─ wiki/answers/  名古屋家系の綺麗なスープと栄養価(推定比較) — 回答も資産化
+ └─ Question: "What's the nutritional value of the soup?" ──────
+     └─ wiki/answers/  Nagoya Iekei's clear soup and its nutrition (estimated comparison) — the answer becomes an asset too
 ```
 
-- **concept(普遍)と topic(進化)を分ける**ため、実食記録が増えても系譜の知識は汚れない
-- 後日「名古屋でおすすめの家系は?」と聞けば、LLM がこれらのページを出典付きで引いて答える。
-  チャットに消えるはずだった回答が answers/ に残り、知識が複利で増える
+- **Separating concepts (timeless) from topics (evolving)** keeps the lineage knowledge clean no matter how many tasting notes pile up
+- Ask "Which Iekei shop do you recommend in Nagoya?" later, and the LLM answers by citing these pages.
+  An answer that would have vanished in a chat log stays in `answers/`, and knowledge compounds
 
 ---
 
-> このリポジトリは private リポジトリのサニタイズ済みミラーです。
-> raw/(ソース原文)と一部の非公開ページは含まれません。
+> This repository is a sanitized mirror of a private repository.
+> `raw/` (original sources) and some non-public pages are not included.
